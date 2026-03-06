@@ -1,194 +1,177 @@
 <!DOCTYPE html>
+
 <html lang="en">
+
 <head>
 <meta charset="UTF-8">
-<title>Nutritional Insights</title>
+<title>Nutritional Insights Dashboard</title>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 
 body{
-    font-family: Arial, sans-serif;
-    margin:0;
-    background:#f4f6f8;
+font-family:Arial;
+margin:0;
+background:#f4f6f8;
 }
 
-header{
-    background:#2f66d0;
-    color:white;
-    padding:15px 40px;
+header, footer{
+background:#2f66d0;
+color:white;
+padding:20px;
+text-align:center;
+}
+
+header {
     font-size:24px;
 }
 
 .container{
-    width:90%;
-    margin:auto;
+width:90%;
+margin:auto;
 }
 
-h2{
-    margin-top:30px;
-}
-
-.cards{
-    display:flex;
-    gap:20px;
-}
-
-.card{
-    background:white;
-    padding:20px;
-    width:220px;
-    border-radius:8px;
-    box-shadow:0px 2px 6px rgba(0,0,0,0.1);
-}
-
-.card:hover{
-    transform:scale(1.02);
-}
-
-.filters{
-    margin-top:20px;
-}
-
-input,select{
-    padding:8px;
-    margin-right:10px;
-}
-
-.buttons{
-    margin-top:20px;
+.section{
+margin-top:40px;
 }
 
 button{
-    padding:10px 15px;
-    border:none;
-    border-radius:4px;
-    color:white;
-    cursor:pointer;
+padding:10px 15px;
+border:none;
+border-radius:4px;
+color:white;
+cursor:pointer;
+margin-right:10px;
 }
 
-.btn-blue{background:#2f66d0;}
-.btn-green{background:#2fa36b;}
-.btn-purple{background:#7c4dff;}
+.blue{background:#2f66d0;}
+.green{background:#2fa36b;}
 
-.pagination{
-    margin:30px 0;
+.chart-box{
+background:white;
+padding:20px;
+margin-top:20px;
+border-radius:8px;
+box-shadow:0 2px 6px rgba(0,0,0,0.1);
 }
 
-.pagination button{
-    background:#ccc;
-    color:black;
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:20px;
 }
 
-footer{
-    background:#2f66d0;
-    color:white;
-    text-align:center;
-    padding:12px;
+th,td{
+border:1px solid #ddd;
+padding:8px;
 }
 
-canvas{
-    margin-top:40px;
+th{
+background:#2f66d0;
+color:white;
 }
 
 </style>
+
 </head>
 
 <body>
 
 <header>
-Nutritional Insights
+Nutritional Insights Dashboard
 </header>
 
 <div class="container">
 
-<h2>Explore Nutritional Insights</h2>
+<div class="section">
+<h2>Controls</h2>
 
-<div class="cards">
-
-<div class="card">
-<h4>Bar Chart</h4>
-<p>Average macronutrient content by diet type.</p>
-</div>
-
-<div class="card">
-<h4>Scatter Plot</h4>
-<p>Nutrient relationships (protein vs carbs).</p>
-</div>
-
-<div class="card">
-<h4>Heatmap</h4>
-<p>Nutrient correlations.</p>
-</div>
-
-<div class="card">
-<h4>Pie Chart</h4>
-<p>Recipe distribution by diet type.</p>
-</div>
-
-</div>
-
-<h2>Filters and Data Interaction</h2>
-
-<div class="filters">
-
-<input id="dietSearch" placeholder="Search by Diet Type">
+<button class="blue" onclick="loadInsights()">Load Nutritional Insights</button> <button class="green" onclick="loadRecipes()">Load Recipes</button>
 
 <select id="dietFilter">
-<option value="">All Diet Types</option>
-<option>Vegan</option>
-<option>Keto</option>
-<option>Paleo</option>
-<option>Mediterranean</option>
+<option value="">All Diets</option>
+<option value="Paleo">Paleo</option>
+<option value="Vegan">Vegan</option>
+<option value="Keto">Keto</option>
+<option value="Mediterranean">Mediterranean</option>
 </select>
 
 </div>
 
-<h2>API Data Interaction</h2>
+<div class="section">
 
-<div class="buttons">
-
-<button class="btn-blue" onclick="getInsights()">Get Nutritional Insights</button>
-<button class="btn-green" onclick="getRecipes()">Get Recipes</button>
-<button class="btn-purple" onclick="getClusters()">Get Clusters</button>
-
+<div class="chart-box">
+<h3>Average Protein by Diet</h3>
+<canvas id="proteinChart"></canvas>
 </div>
 
-<canvas id="chart"></canvas>
+<div class="chart-box">
+<h3>Diet Distribution</h3>
+<canvas id="dietPie"></canvas>
+</div>
 
-<h2>Pagination</h2>
-
-<div class="pagination">
-<button>Previous</button>
-<button>1</button>
-<button>2</button>
-<button>Next</button>
+<div class="chart-box">
+<h3>Protein vs Carbs</h3>
+<canvas id="scatterChart"></canvas>
 </div>
 
 </div>
 
-<footer>
-© 2025 Nutritional Insights. All Rights Reserved.
-</footer>
+<div class="section">
+
+<h2>Recipe Results</h2>
+
+<table id="recipeTable">
+<thead>
+<tr>
+<th>Diet</th>
+<th>Recipe</th>
+<th>Cuisine</th>
+<th>Protein</th>
+<th>Carbs</th>
+<th>Fat</th>
+</tr>
+</thead>
+
+<tbody></tbody>
+
+</table>
+
+</div>
+
+</div>
 
 <script>
 
-async function getInsights(){
+const API="http://127.0.0.1:5000"
 
-const response = await fetch("/api/insights");
-const data = await response.json();
+async function loadInsights(){
 
-const labels = data.map(x => x.Diet_type)
-const protein = data.map(x => x["Protein(g)"])
+const response = await fetch(API+"/api/insights")
+const data = await response.json()
 
-const ctx = document.getElementById('chart')
+const labels = Object.keys(data)
 
-new Chart(ctx,{
+const protein = labels.map(d=>data[d]["Protein(g)"])
+
+new Chart(document.getElementById("proteinChart"),{
 type:'bar',
 data:{
 labels:labels,
 datasets:[{
-label:'Average Protein',
+label:"Average Protein",
+data:protein
+}]
+}
+})
+
+
+new Chart(document.getElementById("dietPie"),{
+type:'pie',
+data:{
+labels:labels,
+datasets:[{
 data:protein
 }]
 }
@@ -196,25 +179,67 @@ data:protein
 
 }
 
-async function getRecipes(){
 
-const response = await fetch("/api/recipes");
-const data = await response.json();
 
-console.log(data)
+async function loadRecipes(){
 
+let diet=document.getElementById("dietFilter").value
+
+let url=API+"/api/recipes"
+
+if(diet){
+url+="?diet_type="+diet
 }
 
-async function getClusters(){
+const response = await fetch(url)
 
-const response = await fetch("/api/clusters");
-const data = await response.json();
+const data = await response.json()
 
-console.log(data)
+const table=document.querySelector("#recipeTable tbody")
+
+table.innerHTML=""
+
+data.slice(0,20).forEach(r=>{
+
+let row=`
+<tr>
+<td>${r.Diet_type}</td>
+<td>${r.Recipe_name}</td>
+<td>${r.Cuisine_type}</td>
+<td>${r["Protein(g)"]}</td>
+<td>${r["Carbs(g)"]}</td>
+<td>${r["Fat(g)"]}</td>
+</tr>
+`
+
+table.innerHTML+=row
+
+})
+
+
+const scatterData=data.slice(0,100).map(r=>({
+x:r["Protein(g)"],
+y:r["Carbs(g)"]
+}))
+
+
+new Chart(document.getElementById("scatterChart"),{
+type:'scatter',
+data:{
+datasets:[{
+label:"Protein vs Carbs",
+data:scatterData
+}]
+}
+})
+
 
 }
-
+window.onload = function () {
+    loadInsights();
+    loadRecipes();
+};
 </script>
-
+<footer> &copy; 2023 Nutritional Insights Dashboard. All rights reserved. </footer>
 </body>
 </html>

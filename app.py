@@ -1,12 +1,13 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from flask import send_from_directory
 import pandas as pd
 import os
 
 app = Flask(__name__)
 CORS(app)
 
-CSV_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "All_Diets.csv")
+CSV_PATH = os.path.join(os.path.dirname(__file__), "All_Diets.csv")
 df = pd.read_csv(CSV_PATH)
 
 numeric_cols = ["Protein(g)", "Carbs(g)", "Fat(g)"]
@@ -14,7 +15,7 @@ df[numeric_cols] = df[numeric_cols].fillna(df[numeric_cols].mean())
 
 @app.route("/")
 def home():
-    return "Nutritional Insights API is running!"
+    return send_from_directory("frontend", "index.html")
 
 @app.route("/api/insights")
 def get_insights():
