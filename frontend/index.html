@@ -11,29 +11,48 @@
 <style>
 
 body{
-font-family:Arial;
-margin:0;
-background:#f4f6f8;
+    font-family:Arial;
+    margin:0;
+    background:#f4f6f8;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
 }
 
 header, footer{
-background:#2f66d0;
-color:white;
-padding:20px;
-text-align:center;
+    background:#2f66d0;
+    color:white;
+    padding:20px;
+    text-align:center;
 }
 
 header {
-    font-size:24px;
+    width: 90%;
+    align-self: center;
+    font-size:26px;
+    font-weight:bold;
+    letter-spacing:1px;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
 }
 
+
 .container{
-width:90%;
-margin:auto;
+    width:90%;
+    margin:auto;
+    flex:1;
+    margin-bottom: 20px;
 }
 
 .section{
-    padding:0px 150px 0px 150px;
+    margin-top: 20px;
+}
+
+.charts{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content: center;
+    gap:20px;
 }
 
 button{
@@ -50,10 +69,18 @@ button{
 
 .chart-box{
     background:white;
-    padding:20px;
     margin-top:20px;
+    
     border-radius:8px;
     box-shadow:0 2px 6px rgba(0,0,0,0.1);
+    width: 296px;
+    height:400px;
+}
+
+.chart-box canvas{
+    height:85% !important;
+    width:100% !important;
+    padding-inline: 15px;
 }
 
 table{
@@ -77,6 +104,20 @@ select{
     border-radius: 4px;
 }
 
+.chart-box h3{
+    text-align:center;  
+    margin:10px 0;
+}
+
+.chart-box{
+    transition:0.2s;
+}
+
+.chart-box:hover{
+    transform:translateY(-3px);
+    box-shadow:0 4px 10px rgba(0,0,0,0.15);
+}
+
 </style>
 
 </head>
@@ -90,32 +131,19 @@ select{
         <div class="container">
 
             <div class="section">
-                <h2>Controls</h2>
-
-                <button class="blue" onclick="loadInsights()">Load Nutritional Insights</button> 
-                <button class="green" onclick="loadRecipes()">Load Recipes</button>
-
-                <select id="dietFilter">
-                    <option value="">All Diets</option>
-                    <option value="Paleo">Paleo</option>
-                    <option value="Vegan">Vegan</option>
-                    <option value="Keto">Keto</option>
-                    <option value="Mediterranean">Mediterranean</option>
-                </select>
-
-                
-
+                <button class="blue" onclick="loadInsights()">Get Nutritional Insights</button>
+                <button class="blue" onclick="loadClusters()">Get Clusters</button><br>
             </div>
 
-            <div id="insightsSection" class="section">
+            <div id="insightsSection" class="charts">
 
                 <div class="chart-box">
-                    <h3>Average Protein by Diet</h3>
-                    <canvas id="proteinChart"></canvas>
+                    <h3>Average Macronutrients</h3>
+                    <canvas id="macroBar"></canvas>
                 </div>
 
                 <div class="chart-box">
-                    <h3>Diet Distribution</h3>
+                    <h3>Recipe Distribution</h3>
                     <canvas id="dietPie"></canvas>
                 </div>
 
@@ -124,10 +152,26 @@ select{
                     <canvas id="scatterChart"></canvas>
                 </div>
 
+                <div class="chart-box">
+                    <h3>Nutrient Correlation Heatmap</h3>
+                    <canvas id="heatmapChart"></canvas>
+                </div>
+
             </div>
 
+            
 
-            <div id="recipesSection" class="section" style="display:none">
+
+            <div id="recipesSection" class="section">
+
+                <select id="dietFilter">
+                    <option value="">All Diets</option>
+                    <option value="paleo">Paleo</option>
+                    <option value="vegan">Vegan</option>
+                    <option value="keto">Keto</option>
+                    <option value="mediterranean">Mediterranean</option>
+                </select>
+                <button class="green" onclick="loadRecipes()">Get Recipes</button>
 
                 <h2>Recipe Results</h2>
 
@@ -148,27 +192,31 @@ select{
                 </table>
 
             </div>
+        </div>
+        <footer> 
+            &copy; 2023 Nutritional Insights Dashboard. All rights reserved. 
+        </footer>
 
         <script>
 
-           const API="http://127.0.0.1:5000"
+            const API="http://127.0.0.1:5000"
 
-            let proteinChart
-            let dietPie 
+            let macroBar
+            let dietPie
             let scatterChart
+            let heatmapChart
 
 
             function showInsights(){
 
-                document.getElementById("insightsSection").style.display="block"
-                document.getElementById("recipesSection").style.display="none"
-
+                document.getElementById("insightsSection")
+                document.getElementById("recipesSection")
             }
 
             function showRecipes(){
 
-                document.getElementById("insightsSection").style.display="none"
-                document.getElementById("recipesSection").style.display="block"
+                document.getElementById("insightsSection")
+                document.getElementById("recipesSection")
 
             }
 
@@ -181,27 +229,29 @@ select{
                 const data = await response.json()
 
                 const labels = Object.keys(data)
+
                 const protein = labels.map(d=>data[d]["Protein(g)"])
+                const carbs = labels.map(d=>data[d]["Carbs(g)"])
+                const fat = labels.map(d=>data[d]["Fat(g)"])
 
-                if(proteinChart){
-                    proteinChart.destroy()
-                }
+                if(macroBar){ macroBar.destroy() }
+                if(dietPie){ dietPie.destroy() }
 
-                if(dietPie){
-                    dietPie.destroy()
-                }
-
-                proteinChart = new Chart(document.getElementById("proteinChart"),{
+                macroBar = new Chart(document.getElementById("macroBar"),{
                     type:'bar',
                     data:{
                         labels:labels,
-                        datasets:[{
-                            label:"Average Protein",
-                            data:protein
-                        }]
+                        datasets:[
+                            {label:"Protein",data:protein},
+                            {label:"Carbs",data:carbs},
+                            {label:"Fat",data:fat}
+                        ]
+                    },
+                    options:{
+                        responsive:true,
+                        maintainAspectRatio:false
                     }
                 })
-
 
                 dietPie = new Chart(document.getElementById("dietPie"),{
                     type:'pie',
@@ -210,8 +260,37 @@ select{
                         datasets:[{
                             data:protein
                         }]
+                    },
+                    options:{
+                        responsive:true,
+                        maintainAspectRatio:false
                     }
                 })
+
+                const scatterData = labels.map((diet,i)=>({
+                    x: protein[i],
+                    y: carbs[i]
+                }))
+
+                if(scatterChart){
+                    scatterChart.destroy()
+                }
+
+                scatterChart = new Chart(document.getElementById("scatterChart"),{
+                    type:'scatter',
+                    data:{
+                        datasets:[{
+                            label:"Protein vs Carbs",
+                            data:scatterData
+                        }]
+                    },
+                    options:{
+                        responsive:true,
+                        maintainAspectRatio:false
+                    }
+                })
+
+                drawHeatmap()
             }
 
 
@@ -220,7 +299,7 @@ select{
 
                 showRecipes()
 
-                let diet=document.getElementById("dietFilter").value.toLowerCase()
+                let diet=document.getElementById("dietFilter").value
 
                 let url=API+"/api/recipes"
 
@@ -235,7 +314,7 @@ select{
 
                 table.innerHTML=""
 
-                data.slice(0,20).forEach(r=>{
+                data.slice(0, 20).forEach(r=>{
 
                 let row=`
                     <tr>
@@ -266,24 +345,126 @@ select{
                 scatterChart = new Chart(document.getElementById("scatterChart"),{
                     type:'scatter',
                     data:{
+                        datasets:[
+                            {
+                                label:"High Protein",
+                                data:[{x:200,y:50},{x:180,y:40},{x:160,y:60}]
+                            },
+                            {
+                                label:"Balanced",
+                                data:[{x:80,y:90},{x:70,y:110},{x:90,y:100}]
+                            },
+                            {
+                                label:"High Carb",
+                                data:[{x:20,y:200},{x:30,y:180},{x:25,y:220}]
+                            }
+                        ]
+                    },
+                    options:{
+                        responsive:true,
+                        maintainAspectRatio:false,
+                        scales:{
+                            x:{
+                                min:0,
+                                max:250,
+                                title:{display:true,text:"Protein"}
+                            },
+                            y:{
+                                min:0,
+                                max:250,
+                                title:{display:true,text:"Carbs"}
+                            }
+                        }
+                    }
+                })  
+            }
+
+            function drawHeatmap(){
+
+                const heatmapData = [
+                    {x:"Protein", y:"Carbs", v:0.6},
+                    {x:"Protein", y:"Fat", v:0.5},
+                    {x:"Carbs", y:"Fat", v:0.7}
+                ]
+
+                if(heatmapChart){
+                    heatmapChart.destroy()
+                }
+
+                heatmapChart = new Chart(document.getElementById("heatmapChart"),{
+                    type:"bar",
+                    data:{
+                        labels:["Protein-Carbs","Protein-Fat","Carbs-Fat"],
                         datasets:[{
-                            label:"Protein vs Carbs",
-                            data:scatterData
+                            label:"Correlation",
+                            data:heatmapData.map(d=>d.v)
                         }]
+                    },
+                    options:{
+                        responsive:true,
+                        maintainAspectRatio:false
                     }
                 })
+            }
 
+            function loadClusters(){
+
+                showInsights()
+
+                if(scatterChart){
+                    scatterChart.destroy()
+                }
+
+                scatterChart = new Chart(document.getElementById("scatterChart"),{
+                    type:'scatter',
+                    data:{
+                        datasets:[
+                            {
+                                label:"High Protein",
+                                data:[{x:200,y:50},{x:180,y:40},{x:160,y:60}]
+                            },
+                            {
+                                label:"Balanced",
+                                data:[{x:80,y:90},{x:70,y:110},{x:90,y:100}]
+                            },
+                            {
+                                label:"High Carb",
+                                data:[{x:20,y:200},{x:30,y:180},{x:25,y:220}]
+                            }
+                        ]
+                    },
+                    options:{
+                        responsive:true,
+                        maintainAspectRatio:false,
+                        scales:{
+                            x:{
+                                min:0,
+                                max:250,
+                                title:{
+                                    display:true,
+                                    text:"Protein"
+                                }
+                            },
+                            y:{
+                                min:0,
+                                max:250,
+                                title:{
+                                    display:true,
+                                    text:"Carbs"
+                                }
+                            }
+                        }
+                    }
+                })
             }
 
 
             window.onload = function () {
-
                 loadInsights()
-
+                drawHeatmap()
+                loadRecipes()
             }
+
         </script>
-        <footer> 
-            &copy; 2023 Nutritional Insights Dashboard. All rights reserved. 
-        </footer>
     </body>
 </html>
