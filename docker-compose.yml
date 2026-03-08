@@ -1,5 +1,18 @@
-version: '3'
 services:
-  diet-analysis:
-    build: .
-    container_name: diet-analysis-app
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: cloud-nutrition-backend
+    ports:
+      - "5000:5000"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: cloud-nutrition-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
