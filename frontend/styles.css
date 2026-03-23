@@ -1,0 +1,8 @@
+.chart-container {
+    position: relative;
+    height: 180px;
+}
+
+#cleanupBar {
+    width: 0%;
+}

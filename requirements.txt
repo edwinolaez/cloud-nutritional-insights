@@ -1,0 +1,8 @@
+flask
+flask-cors
+pandas
+python-dotenv
+requests
+azure-mgmt-compute
+azure-mgmt-resource
+azure-identity
